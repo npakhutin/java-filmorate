@@ -1,4 +1,11 @@
 package ru.yandex.practicum.filmorate.exceptions;
 
-public class UnknownUserException extends IllegalArgumentException {
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+@ResponseStatus(value = HttpStatus.NOT_FOUND)
+public class UnknownUserException extends RuntimeException {
+    public UnknownUserException(String m) {
+        super(m);
+    }
 }

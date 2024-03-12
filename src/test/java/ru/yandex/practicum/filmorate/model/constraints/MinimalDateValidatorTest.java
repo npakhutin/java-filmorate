@@ -37,6 +37,23 @@ class MinimalDateValidatorTest {
     }
 
     @Test
+    void checkBorderDates() {
+        MinimalDateChecker checker = new MinimalDateChecker(LocalDate.of(1895, 12, 28));
+
+        Set<ConstraintViolation<MinimalDateChecker>> violations = validator.validate(checker);
+        assertEquals(0, violations.size());
+
+        checker = new MinimalDateChecker(LocalDate.of(1895, 12, 29));
+        violations = validator.validate(checker);
+        assertEquals(0, violations.size());
+
+        checker = new MinimalDateChecker(LocalDate.of(1895, 12, 27));
+        violations = validator.validate(checker);
+        assertEquals(1, violations.size());
+
+    }
+
+    @Test
     void checkNullDate() {
         MinimalDateChecker checker = new MinimalDateChecker(null);
 
