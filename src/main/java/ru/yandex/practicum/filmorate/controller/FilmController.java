@@ -1,14 +1,20 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exceptions.FilmAlreadyExistsException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import ru.yandex.practicum.filmorate.exceptions.UnknownFilmException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.validation.Transfer;
 
-import javax.validation.Valid;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 @Slf4j
@@ -16,35 +22,36 @@ public class FilmController {
     private Integer filmIdCounter = 0;
     private final HashMap<Integer, Film> films = new HashMap<>();
 
-    @PostMapping("/films")
-    public Film create(@Valid @RequestBody Film film) {
+    @PostMapping(value = "/films")
+    public ResponseEntity<Film> create(@Validated(Transfer.New.class) @RequestBody Film film) {
         log.info("POST /films");
-        if (film.getId() != null) {
-            log.warn("Error: new film id should be null, actual id = " + film.getId());
-            throw new FilmAlreadyExistsException();
-        }
+
         film.setId(getNextFilmId());
         films.put(film.getId(), film);
+
         log.info("Film added with id {}", film.getId());
-        return film;
+        return new ResponseEntity<>(film, HttpStatus.CREATED);
     }
 
     @PutMapping("/films")
-    public Film update(@Valid @RequestBody Film film) {
+    public ResponseEntity<Film> update(@Validated(Transfer.Existing.class) @RequestBody Film film) {
         log.info("PUT /films");
-        if (film.getId() == null || !films.containsKey(film.getId())) {
-            log.warn("Film id == null or id == " + film.getId() + " is not in films");
-            throw new UnknownFilmException();
+
+        if (!films.containsKey(film.getId())) {
+            var m = "Unknown film with id = " + film.getId();
+            log.warn(m);
+            throw new UnknownFilmException(m);
         }
         films.put(film.getId(), film);
+
         log.info("Film with id {} updated", film.getId());
-        return film;
+        return new ResponseEntity<>(film, HttpStatus.OK);
     }
 
     @GetMapping("/films")
-    public Collection<Film> getAll() {
+    public ResponseEntity<List<Film>> getAll() {
         log.info("GET /films");
-        return films.values();
+        return new ResponseEntity<>(List.copyOf(films.values()), HttpStatus.OK);
     }
 
     private int getNextFilmId() {
