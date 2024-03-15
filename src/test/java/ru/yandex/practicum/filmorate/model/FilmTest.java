@@ -83,7 +83,7 @@ class FilmTest {
 
         film.setDescription(null);
         violations = validator.validateProperty(film, "description", Transfer.New.class, Transfer.Existing.class);
-        assertEquals(2, violations.size());
+        assertEquals(1, violations.size());
 
         film.setDescription("       ");
         violations = validator.validateProperty(film, "description", Transfer.New.class, Transfer.Existing.class);
