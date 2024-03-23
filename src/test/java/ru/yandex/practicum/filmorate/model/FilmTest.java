@@ -12,11 +12,11 @@ import java.time.LocalDate;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FilmTest {
     private static Validator validator;
-    Film film;
-    Set<ConstraintViolation<Film>> violations;
+    private Set<ConstraintViolation<Film>> violations;
 
     @BeforeAll
     static void init() {
@@ -25,39 +25,41 @@ class FilmTest {
 
     @BeforeEach
     void setUp() {
-        film = new Film(1, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+
     }
 
     @Test
     void createIdNotNull() {
-        film.setId(1);
+        Film film = new Film(1, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         violations = validator.validate(film, Transfer.New.class);
         assertEquals(1, violations.size());
     }
 
     @Test
     void createIdNull() {
-        film.setId(null);
+        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         violations = validator.validate(film, Transfer.New.class);
         assertEquals(0, violations.size());
     }
 
     @Test
     void updateIdNotNull() {
-        film.setId(1);
+        Film film = new Film(1, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         violations = validator.validate(film, Transfer.Existing.class);
         assertEquals(0, violations.size());
+        assertThrows(IllegalArgumentException.class, () -> film.setId(2));
     }
 
     @Test
     void updateIdNull() {
-        film.setId(null);
+        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         violations = validator.validate(film, Transfer.Existing.class);
         assertEquals(1, violations.size());
     }
 
     @Test
     void testValidName() {
+        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film.setName("");
         violations = validator.validateProperty(film, "name", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -77,6 +79,7 @@ class FilmTest {
 
     @Test
     void testValidDescription() {
+        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film.setDescription("");
         violations = validator.validateProperty(film, "description", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -100,6 +103,7 @@ class FilmTest {
 
     @Test
     void testReleaseDate() {
+        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film.setReleaseDate(null);
         violations = validator.validateProperty(film, "releaseDate", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -127,6 +131,7 @@ class FilmTest {
 
     @Test
     void testDuration() {
+        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film.setDuration(null);
         violations = validator.validateProperty(film, "duration", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -146,5 +151,27 @@ class FilmTest {
         film.setDuration(180);
         violations = validator.validateProperty(film, "duration", Transfer.New.class, Transfer.Existing.class);
         assertEquals(0, violations.size());
+    }
+
+    @Test
+    void testSetLike() {
+        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+        assertThrows(IllegalArgumentException.class, () -> film.setLike(null));
+
+        film.setLike(1);
+        assertEquals(1, film.getUsersLiked().size());
+
+    }
+
+    @Test
+    void testDeleteLike() {
+        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+
+        assertThrows(IllegalArgumentException.class, () -> film.deleteLike(null));
+
+        film.setLike(1);
+        film.deleteLike(1);
+        assertEquals(0, film.getUsersLiked().size());
+
     }
 }
