@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public abstract class FilmStorageTest <T extends FilmStorage> {
+public abstract class FilmStorageTest<T extends FilmStorage> {
 
     protected T storage;
 
