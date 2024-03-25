@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.UnknownUserException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -23,9 +22,6 @@ public class UserService {
     }
 
     public User update(User user) {
-        if (storage.getById(user.getId()) == null) {
-            throw new UnknownUserException("В хранилище не найден пользователь для обновления с id = " + user.getId());
-        }
         return storage.update(user);
     }
 
@@ -34,11 +30,7 @@ public class UserService {
     }
 
     public User getById(Integer id) {
-        User user = storage.getById(id);
-        if (user == null) {
-            throw new UnknownUserException("В хранилище не найден пользователь с id = " + id);
-        }
-        return user;
+        return storage.getById(id);
     }
 
     public User addFriend(Integer id, Integer friendId) {

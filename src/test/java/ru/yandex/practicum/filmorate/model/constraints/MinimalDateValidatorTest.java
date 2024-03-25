@@ -3,7 +3,8 @@ package ru.yandex.practicum.filmorate.model.constraints;
 import lombok.Data;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;

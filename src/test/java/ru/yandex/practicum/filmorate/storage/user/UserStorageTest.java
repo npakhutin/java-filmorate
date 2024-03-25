@@ -2,11 +2,14 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.exception.UnknownUserException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public abstract class UserStorageTest<T extends UserStorage> {
     private User user;
@@ -49,7 +52,7 @@ public abstract class UserStorageTest<T extends UserStorage> {
                 .email("user@mail.ru")
                 .birthday(LocalDate.of(1980, 12, 1))
                 .build();
-        assertEquals(unknownUser, storage.update(unknownUser ));
+        assertThrows(UnknownUserException.class, () -> storage.update(unknownUser));
     }
 
     @Test
