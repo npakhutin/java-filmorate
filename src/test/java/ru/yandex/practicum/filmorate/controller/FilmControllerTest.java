@@ -6,18 +6,18 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.yandex.practicum.filmorate.FilmorateApplication;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.service.FilmService;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -26,33 +26,33 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(FilmController.class)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+        classes = FilmorateApplication.class)
+@AutoConfigureMockMvc
 class FilmControllerTest {
+    private final MockMvc mockMvc;
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private Film film;
+
     @Autowired
-    private MockMvc mockMvc;
-       private static final ObjectMapper mapper = new ObjectMapper();
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public FilmService filmService() {
-            return new FilmService();
-        }
-
-        @Bean
-        public FilmStorage filmStorage() {
-            return new InMemoryFilmStorage();
-        }
+    public FilmControllerTest(MockMvc mockMvc) {
+        this.mockMvc = mockMvc;
     }
 
     @BeforeEach
     void setUp() {
+        film = Film.builder()
+                .name("Film Name")
+                .description("Film Description")
+                .releaseDate(LocalDate.of(1980, 12, 1))
+                .duration(180)
+                .build();
         mapper.registerModule(new JavaTimeModule());
     }
 
     @Test
     public void testPostOk() throws Exception {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         String json = mapper.writeValueAsString(film);
         mockMvc.perform(post("/films").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .content(json).accept(MediaType.APPLICATION_JSON))
@@ -63,16 +63,15 @@ class FilmControllerTest {
 
     @Test
     public void testPostError() throws Exception {
-        Film film = new Film(1, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+        film.setId(1);
         String json = mapper.writeValueAsString(film);
         mockMvc.perform(post("/films").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .content(json).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testPutOk() throws Exception {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film = postFilm(film);
 
         film.setName("Updated Name");
@@ -86,10 +85,14 @@ class FilmControllerTest {
 
     @Test
     public void testPutUnknownId() throws Exception {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         postFilm(film);
-
-        film = new Film(100, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+        film = Film.builder()
+                .id(100)
+                .name("Film Name")
+                .description("Film Description")
+                .releaseDate(LocalDate.of(1980, 12, 1))
+                .duration(180)
+                .build();
         String jsonRq = mapper.writeValueAsString(film);
         mockMvc.perform(put("/films").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .content(jsonRq).accept(MediaType.APPLICATION_JSON))
@@ -98,7 +101,6 @@ class FilmControllerTest {
 
     @Test
     void getAll() throws Exception {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film = postFilm(film);
 
         mockMvc.perform(get("/films").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
@@ -112,7 +114,6 @@ class FilmControllerTest {
 
     @Test
     void getById() throws Exception {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film = postFilm(film);
 
         mockMvc.perform(get("/films/" + film.getId()).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
@@ -124,10 +125,16 @@ class FilmControllerTest {
 
     @Test
     public void testSetDeleteLike() throws Exception {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film = postFilm(film);
+        User user = User.builder()
+                .login("user_login")
+                .name("User Name")
+                .email("user@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        user = postUser(user);
 
-        String jsonRs = mockMvc.perform(put(String.format("/films/%d/like/%d", film.getId(), 1)).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
+        String jsonRs = mockMvc.perform(put(String.format("/films/%d/like/%d", film.getId(), user.getId())).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -136,11 +143,11 @@ class FilmControllerTest {
         film = mapper.readValue(jsonRs, Film.class);
         assertEquals(Set.of(1), film.getUsersLiked());
 
-        mockMvc.perform(put(String.format("/films/%d/like/%d", 100, 1)).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
+        mockMvc.perform(put(String.format("/films/%d/like/%d", 100, user.getId())).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
-        jsonRs = mockMvc.perform(delete(String.format("/films/%d/like/%d", film.getId(), 1)).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
+        jsonRs = mockMvc.perform(delete(String.format("/films/%d/like/%d", film.getId(), user.getId())).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -149,7 +156,7 @@ class FilmControllerTest {
         film = mapper.readValue(jsonRs, Film.class);
         assertEquals(0, film.getUsersLiked().size());
 
-        mockMvc.perform(delete(String.format("/films/%d/like/%d", 100, 1)).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
+        mockMvc.perform(delete(String.format("/films/%d/like/%d", 100, user.getId())).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -158,12 +165,26 @@ class FilmControllerTest {
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     public void testGetTopPopular() throws Exception {
 
+        List<User> users = new ArrayList<>();
         for (int filmNum = 0; filmNum < 12; filmNum++) {
-            Film film = new Film(null, "Film Name" + filmNum, "Film Description" + filmNum, LocalDate.of(1980, 12, 1), 180);
+            film = Film.builder()
+                    .name("Film Name" + filmNum)
+                    .description("Film Description" + filmNum)
+                    .releaseDate(LocalDate.of(1980, 12, 1))
+                    .duration(180)
+                    .build();
+            User user = User.builder()
+                    .login("user_login" + filmNum)
+                    .name("User Name" + filmNum)
+                    .email("user@mail.ru")
+                    .birthday(LocalDate.of(1980, 12, 1))
+                    .build();
 
             film = postFilm(film);
-            for (int userId = 1; userId < film.getId(); userId++) {
-                mockMvc.perform(put(String.format("/films/%d/like/%d", film.getId(), userId)).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+            users.add(postUser(user));
+
+            for (int i = 1; i < users.size(); i++) {
+                mockMvc.perform(put(String.format("/films/%d/like/%d", film.getId(), users.get(i).getId())).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
                         .andExpect(status().isOk());
             }
         }
@@ -197,5 +218,17 @@ class FilmControllerTest {
                 .getContentAsString();
         film = mapper.readValue(jsonRs, Film.class);
         return film;
+    }
+
+    private User postUser(User user) throws Exception {
+        String jsonRq = mapper.writeValueAsString(user);
+        String jsonRs = mockMvc.perform(post("/users").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
+                        .content(jsonRq).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        user = mapper.readValue(jsonRs, User.class);
+        return user;
     }
 }

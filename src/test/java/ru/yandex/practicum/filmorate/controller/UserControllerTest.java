@@ -27,32 +27,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(UserController.class)
 class UserControllerTest {
-    @Autowired
-    private MockMvc mockMvc;
     private static final ObjectMapper mapper = new ObjectMapper();
+    private final MockMvc mockMvc;
+    private User user;
 
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public UserService userService() {
-            return new UserService();
-        }
-
-        @Bean
-        public UserStorage userStorage() {
-            return new InMemoryUserStorage();
-        }
-
+    @Autowired
+    public UserControllerTest(MockMvc mockMvc) {
+        this.mockMvc = mockMvc;
     }
 
     @BeforeEach
     void setUp() {
+        user = User.builder()
+                .login("user_login")
+                .name("User Name")
+                .email("user@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
         mapper.registerModule(new JavaTimeModule());
     }
 
     @Test
     public void testPostOk() throws Exception {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         String json = mapper.writeValueAsString(user);
         mockMvc.perform(post("/users").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .content(json).accept(MediaType.APPLICATION_JSON))
@@ -63,7 +59,7 @@ class UserControllerTest {
 
     @Test
     public void testPostError() throws Exception {
-        User user = new User(1, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
+        user.setId(1);
         String json = mapper.writeValueAsString(user);
         mockMvc.perform(post("/users").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .content(json).accept(MediaType.APPLICATION_JSON))
@@ -72,7 +68,6 @@ class UserControllerTest {
 
     @Test
     public void testPutOk() throws Exception {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         user = postUser(user);
 
         user.setName("Updated Name");
@@ -86,10 +81,16 @@ class UserControllerTest {
 
     @Test
     public void testPutUnknownId() throws Exception {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         postUser(user);
 
-        user = new User(100, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
+        user = User.builder()
+                .id(100)
+                .login("user_login")
+                .name("User Name")
+                .email("user@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+
         String jsonRq = mapper.writeValueAsString(user);
         mockMvc.perform(put("/users").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .content(jsonRq).accept(MediaType.APPLICATION_JSON))
@@ -98,7 +99,6 @@ class UserControllerTest {
 
     @Test
     void getAll() throws Exception {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         user = postUser(user);
 
         mockMvc.perform(get("/users").contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
@@ -112,7 +112,6 @@ class UserControllerTest {
 
     @Test
     void getById() throws Exception {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         user = postUser(user);
 
         mockMvc.perform(get("/users/" + user.getId()).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
@@ -123,9 +122,13 @@ class UserControllerTest {
     }
 
     @Test
-    void testAddDeleteFriend() throws Exception  {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
-        User friend = new User(null, "friend_login", "Friend Name", "friend@mail.ru", LocalDate.of(1980, 12, 1));
+    void testAddDeleteFriend() throws Exception {
+        User friend = User.builder()
+                .login("friend_login")
+                .name("Friend Name")
+                .email("friend@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
 
         user = postUser(user);
         friend = postUser(friend);
@@ -152,8 +155,7 @@ class UserControllerTest {
     }
 
     @Test
-    void testAddDeleteUnknownFriend() throws Exception  {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
+    void testAddDeleteUnknownFriend() throws Exception {
 
         user = postUser(user);
 
@@ -168,9 +170,18 @@ class UserControllerTest {
 
     @Test
     void getFriends() throws Exception {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
-        User friend1 = new User(null, "friend1_login", "Friend1 Name", "friend1@mail.ru", LocalDate.of(1980, 12, 1));
-        User friend2 = new User(null, "friend2_login", "Friend2 Name", "friend2@mail.ru", LocalDate.of(1980, 12, 1));
+        User friend1 = User.builder()
+                .login("friend1_login")
+                .name("Friend1 Name")
+                .email("friend1@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        User friend2 = User.builder()
+                .login("friend2_login")
+                .name("Friend2 Name")
+                .email("friend2@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
 
         user = postUser(user);
         friend1 = postUser(friend1);
@@ -196,10 +207,31 @@ class UserControllerTest {
 
     @Test
     void getCommonFriends() throws Exception {
-        User user1 = new User(null, "user1_login", "User1 Name", "user1@mail.ru", LocalDate.of(1980, 12, 1));
-        User user2 = new User(null, "user2_login", "User2 Name", "user2@mail.ru", LocalDate.of(1980, 12, 1));
-        User friend1 = new User(null, "friend1_login", "Friend1 Name", "friend1@mail.ru", LocalDate.of(1980, 12, 1));
-        User friend2 = new User(null, "friend2_login", "Friend2 Name", "friend2@mail.ru", LocalDate.of(1980, 12, 1));
+
+        User user1 = User.builder()
+                .login("user1_login")
+                .name("User1 Name")
+                .email("user1@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        User user2 = User.builder()
+                .login("user2_login")
+                .name("User2 Name")
+                .email("user2@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        User friend1 = User.builder()
+                .login("friend1_login")
+                .name("Friend1 Name")
+                .email("friend1@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        User friend2 = User.builder()
+                .login("friend2_login")
+                .name("Friend2 Name")
+                .email("friend2@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
 
         user1 = postUser(user1);
         user2 = postUser(user2);
@@ -237,7 +269,7 @@ class UserControllerTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-         mapper.readValue(jsonRs, User.class);
+        mapper.readValue(jsonRs, User.class);
 
         mockMvc.perform(get(String.format("/users/%d/friends/common/%d", user1.getId(), user2.getId())).contentType(MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                         .accept(MediaType.APPLICATION_JSON))
@@ -263,5 +295,19 @@ class UserControllerTest {
                 .getContentAsString();
         user = mapper.readValue(jsonRs, User.class);
         return user;
+    }
+
+    @TestConfiguration
+    static class TestConfig {
+
+        @Bean
+        public UserService userService() {
+            return new UserService(userStorage());
+        }
+
+        @Bean
+        public UserStorage userStorage() {
+            return new InMemoryUserStorage();
+        }
     }
 }

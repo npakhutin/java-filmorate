@@ -1,7 +1,8 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.*;
-import ru.yandex.practicum.filmorate.model.validation.Transfer;
+import lombok.experimental.SuperBuilder;
+import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
@@ -11,14 +12,11 @@ import java.util.Objects;
 import java.util.Set;
 
 @Data
-@AllArgsConstructor
+@Validated
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class User {
-    @Null(groups = {Transfer.New.class})
-    @NotNull(groups = {Transfer.Existing.class})
-    @Setter(AccessLevel.NONE)
-    private Integer id;
-
+public class User extends IdentifiedModelObject {
     @NotBlank
     @Pattern(regexp = "^[\\w.-]{0,19}[0-9a-zA-Z]$")
     private String login;
@@ -35,13 +33,6 @@ public class User {
 
     private final Set<Integer> friendIds = new HashSet<>();
 
-    public void setId(Integer id) {
-        if (this.id != null) {
-            throw new IllegalArgumentException("Id has already been set");
-        }
-        this.id = id;
-    }
-
     public String getName() {
         return name == null || name.isEmpty() ? login : name;
     }
@@ -50,17 +41,14 @@ public class User {
         return List.copyOf(friendIds);
     }
 
-    public void addFriend(User user) {
-        if (user == null) {
-            throw new IllegalArgumentException("User.id should be not null");
+    public void addFriend(@NotNull Integer userId) {
+        if (Objects.equals(userId, this.getId())) {
+            throw new IllegalArgumentException("Невозможно добавить самого себя в список друзей, id = " + userId);
         }
-        if (Objects.equals(user.getId(), this.getId())) {
-            throw new IllegalArgumentException("Can't add self as a friend");
-        }
-        friendIds.add(user.getId());
+        friendIds.add(userId);
     }
 
-    public void deleteFriend(User user) {
-        friendIds.remove(user.getId());
+    public void deleteFriend(Integer userId) {
+        friendIds.remove(userId);
     }
 }

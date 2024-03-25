@@ -8,6 +8,8 @@ import ru.yandex.practicum.filmorate.model.validation.Transfer;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
+import javax.validation.executable.ExecutableValidator;
+import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -15,9 +17,10 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class UserTest {
+public class UserTest extends IdentifiedModelObjectTest<User> {
     private static Validator validator;
-    Set<ConstraintViolation<User>> violations;
+    private Set<ConstraintViolation<User>> violations;
+    private User user;
 
     @BeforeAll
     static void init() {
@@ -26,46 +29,49 @@ public class UserTest {
 
     @BeforeEach
     void setUp() {
-
+        user = User.builder()
+                .login("user_login")
+                .name("User Name")
+                .email("user@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        entity = user;
     }
 
     @Test
     void createIdNotNull() {
-        User user = new User(1, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
+        user.setId(1);
         violations = validator.validate(user, Transfer.New.class);
         assertEquals(1, violations.size());
     }
 
     @Test
     void createIdNull() {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         violations = validator.validate(user, Transfer.New.class);
         assertEquals(0, violations.size());
     }
 
     @Test
     void updateIdNotNull() {
-        User user = new User(1, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
+        user.setId(1);
         violations = validator.validate(user, Transfer.Existing.class);
         assertEquals(0, violations.size());
     }
 
     @Test
     void testUpdateNotNullId() {
-        User user = new User(1, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
+        user.setId(1);
         assertThrows(IllegalArgumentException.class, () -> user.setId(2));
     }
 
     @Test
     void updateIdNull() {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         Set<ConstraintViolation<User>> violations = validator.validate(user, Transfer.Existing.class);
         assertEquals(1, violations.size());
     }
 
     @Test
     void testValidLogin() {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         user.setLogin("");
         violations = validator.validateProperty(user, "login", Transfer.New.class, Transfer.Existing.class);
         assertEquals(2, violations.size());
@@ -93,7 +99,6 @@ public class UserTest {
 
     @Test
     void testValidName() {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         user.setName("");
         violations = validator.validateProperty(user, "name", Transfer.New.class, Transfer.Existing.class);
         assertEquals(0, violations.size());
@@ -112,7 +117,6 @@ public class UserTest {
 
     @Test
     void testValidEmail() {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         user.setEmail("");
         violations = validator.validateProperty(user, "email", Transfer.New.class, Transfer.Existing.class);
         assertEquals(2, violations.size());
@@ -144,7 +148,6 @@ public class UserTest {
 
     @Test
     void testBirthday() {
-        User user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
         user.setBirthday(null);
         violations = validator.validateProperty(user, "birthday", Transfer.New.class, Transfer.Existing.class);
         assertEquals(0, violations.size());
@@ -163,26 +166,44 @@ public class UserTest {
     }
 
     @Test
-    void testAddFriend() {
-        User user = new User(1, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
-        User friend = new User(2, "friend_login", "Friend Name", "friend@mail.ru", LocalDate.of(1980, 12, 1));
-        user.addFriend(friend);
-
+    void testAddFriend() throws Exception {
+        user.setId(1);
+        User friend = User.builder()
+                .id(2)
+                .login("friend_login")
+                .name("Friend Name")
+                .email("friend@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        user.addFriend(friend.getId());
         assertEquals(List.of(friend.getId()), user.getFriendIds());
 
-        assertThrows(IllegalArgumentException.class, () -> user.addFriend(null));
-        assertThrows(IllegalArgumentException.class, () -> user.addFriend(user));
+        ExecutableValidator executableValidator = Validation
+                .buildDefaultValidatorFactory()
+                .getValidator()
+                .forExecutables();
+        Method addFriend = user.getClass().getMethod("addFriend", Integer.class);
+        violations = executableValidator.validateParameters(user, addFriend, new Object[]{null});
+        assertEquals(1, violations.size());
+
+        assertThrows(IllegalArgumentException.class, () -> user.addFriend(user.getId()));
     }
 
     @Test
     void testDeleteFriend() {
-        User user = new User(1, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
-        User friend = new User(2, "friend_login", "Friend Name", "friend@mail.ru", LocalDate.of(1980, 12, 1));
-        user.addFriend(friend);
+        user.setId(1);
+        User friend = User.builder()
+                .id(2)
+                .login("friend_login")
+                .name("Friend Name")
+                .email("friend@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        user.addFriend(friend.getId());
 
         assertEquals(List.of(friend.getId()), user.getFriendIds());
 
-        user.deleteFriend(friend);
+        user.deleteFriend(friend.getId());
         assertEquals(0, user.getFriendIds().size());
     }
 }

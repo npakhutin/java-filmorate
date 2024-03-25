@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exceptions.UnknownUserException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.HashMap;
@@ -21,9 +20,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        if (!users.containsKey(user.getId())) {
-            throw new UnknownUserException("Unknown user with id = " + user.getId());
-        }
         users.put(user.getId(), user);
         return user;
     }
@@ -35,9 +31,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User getById(Integer id) {
-        if (!users.containsKey(id)) {
-            throw new UnknownUserException("Unknown user with id = " + id);
-        }
         return users.get(id);
     }
 
