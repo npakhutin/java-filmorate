@@ -2,51 +2,58 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.annotation.DirtiesContext;
-import ru.yandex.practicum.filmorate.exceptions.UnknownFilmException;
+import ru.yandex.practicum.filmorate.exception.UnknownFilmException;
+import ru.yandex.practicum.filmorate.exception.UnknownUserException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@WebMvcTest(FilmService.class)
 class FilmServiceTest {
-    @Autowired
-    private FilmService service;
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public FilmStorage filmStorage() {
-            return new InMemoryFilmStorage();
-        }
-    }
+    private final UserStorage userStorage = new InMemoryUserStorage();
+    private final FilmService service = new FilmService(new InMemoryFilmStorage(), userStorage);
+    private Film film;
+    private User user;
 
     @BeforeEach
     void setUp() {
-
+        film = Film.builder()
+                .name("Film Name")
+                .description("Film Description")
+                .releaseDate(LocalDate.of(1980, 12, 1))
+                .duration(180)
+                .build();
+        user = User.builder()
+                .login("user_login")
+                .name("User Name")
+                .email("user@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
     }
 
     @Test
     void create() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         service.create(film);
         assertEquals(film, service.getById(film.getId()));
     }
 
     @Test
     void update() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         service.create(film);
-        film = new Film(film.getId(), "Updated Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+        film = Film.builder()
+                .id(film.getId())
+                .name("Updated Name")
+                .description("Film Description")
+                .releaseDate(LocalDate.of(1980, 12, 1))
+                .duration(180)
+                .build();
         service.update(film);
         assertEquals(film.getName(), service.getById(film.getId()).getName());
     }
@@ -54,54 +61,61 @@ class FilmServiceTest {
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void getAll() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         service.create(film);
-        film = new Film(null, "Updated Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+        film = Film.builder()
+                .name("Updated Name")
+                .description("Film Description")
+                .releaseDate(LocalDate.of(1980, 12, 1))
+                .duration(180)
+                .build();
         service.create(film);
         assertEquals(2, service.getAll().size());
     }
 
     @Test
     void getById() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         service.create(film);
         assertEquals(film, service.getById(film.getId()));
-        assertThrows(UnknownFilmException.class, () -> service.getById(film.getId() + 1));
-        assertThrows(UnknownFilmException.class, () -> service.getById(null));
+        assertThrows(UnknownFilmException.class,() -> service.getById(film.getId() + 1));
     }
 
     @Test
     void testSetLike() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         service.create(film);
+        userStorage.create(user);
 
-        film = service.setLike(film.getId(), 1);
+        film = service.setLike(film.getId(), user.getId());
         assertEquals(1, film.getUsersLiked().size());
     }
 
     @Test
     void testDeleteLike() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         service.create(film);
+        userStorage.create(user);
 
-        film = service.setLike(film.getId(), 1);
+        film = service.setLike(film.getId(), user.getId());
         assertEquals(1, film.getUsersLiked().size());
 
-        film = service.deleteLike(film.getId(), 1);
+        film = service.deleteLike(film.getId(), user.getId());
         assertEquals(0, film.getUsersLiked().size());
+
+        assertThrows(UnknownUserException.class, () -> service.deleteLike(film.getId(), 100));
     }
 
     @Test
     void testTopPopular() {
         for (int filmNum = 0; filmNum < 12; filmNum++) {
-            Film film = new Film(null, "Film Name" + filmNum, "Film Description" + filmNum, LocalDate.of(1980, 12, 1), 180);
+            film = Film.builder()
+                    .name("Film Name" + filmNum)
+                    .description("Film Description" + filmNum)
+                    .releaseDate(LocalDate.of(1980, 12, 1))
+                    .duration(180)
+                    .build();
             film = service.create(film);
             for (int userId = 1; userId < film.getId(); userId++) {
                 film.setLike(userId);
             }
         }
-        assertThrows(IllegalArgumentException.class, () -> service.getTopPopular(null));
-        assertThrows(IllegalArgumentException.class, () -> service.getTopPopular(0));
         List<Film> topFilms = service.getTopPopular(1);
         assertEquals(1, topFilms.size());
         assertEquals(12, topFilms.get(0).getId());

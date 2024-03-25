@@ -14,9 +14,10 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class FilmTest {
+class FilmTest extends IdentifiedModelObjectTest<Film> {
     private static Validator validator;
     private Set<ConstraintViolation<Film>> violations;
+    private Film film;
 
     @BeforeAll
     static void init() {
@@ -25,26 +26,31 @@ class FilmTest {
 
     @BeforeEach
     void setUp() {
-
+        film = Film.builder()
+                .name("Film Name")
+                .description("Film Description")
+                .releaseDate(LocalDate.of(1980, 12, 1))
+                .duration(180)
+                .build();
+        entity = film;
     }
 
     @Test
     void createIdNotNull() {
-        Film film = new Film(1, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+        film.setId(1);
         violations = validator.validate(film, Transfer.New.class);
         assertEquals(1, violations.size());
     }
 
     @Test
     void createIdNull() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         violations = validator.validate(film, Transfer.New.class);
         assertEquals(0, violations.size());
     }
 
     @Test
     void updateIdNotNull() {
-        Film film = new Film(1, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+        film.setId(1);
         violations = validator.validate(film, Transfer.Existing.class);
         assertEquals(0, violations.size());
         assertThrows(IllegalArgumentException.class, () -> film.setId(2));
@@ -52,14 +58,12 @@ class FilmTest {
 
     @Test
     void updateIdNull() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         violations = validator.validate(film, Transfer.Existing.class);
         assertEquals(1, violations.size());
     }
 
     @Test
     void testValidName() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film.setName("");
         violations = validator.validateProperty(film, "name", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -79,7 +83,6 @@ class FilmTest {
 
     @Test
     void testValidDescription() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film.setDescription("");
         violations = validator.validateProperty(film, "description", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -103,7 +106,6 @@ class FilmTest {
 
     @Test
     void testReleaseDate() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film.setReleaseDate(null);
         violations = validator.validateProperty(film, "releaseDate", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -131,7 +133,6 @@ class FilmTest {
 
     @Test
     void testDuration() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
         film.setDuration(null);
         violations = validator.validateProperty(film, "duration", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -155,23 +156,14 @@ class FilmTest {
 
     @Test
     void testSetLike() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
-        assertThrows(IllegalArgumentException.class, () -> film.setLike(null));
-
         film.setLike(1);
         assertEquals(1, film.getUsersLiked().size());
-
     }
 
     @Test
     void testDeleteLike() {
-        Film film = new Film(null, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
-
-        assertThrows(IllegalArgumentException.class, () -> film.deleteLike(null));
-
         film.setLike(1);
         film.deleteLike(1);
         assertEquals(0, film.getUsersLiked().size());
-
     }
 }

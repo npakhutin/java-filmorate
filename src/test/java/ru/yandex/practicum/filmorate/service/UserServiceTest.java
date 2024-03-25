@@ -2,38 +2,29 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.annotation.DirtiesContext;
-import ru.yandex.practicum.filmorate.exceptions.UnknownUserException;
+import ru.yandex.practicum.filmorate.exception.UnknownUserException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@WebMvcTest(UserService.class)
 class UserServiceTest {
-    @Autowired
-    private UserService service;
-    User user;
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public UserStorage userStorage() {
-            return new InMemoryUserStorage();
-        }
-    }
+    private final UserService service = new UserService(new InMemoryUserStorage());
+    private User user;
 
     @BeforeEach
     void setUp() {
-        user = new User(null, "user_login", "User Name", "user@mail.ru", LocalDate.of(1980, 12, 1));
+        user = User.builder()
+                .login("user_login")
+                .name("User Name")
+                .email("user@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
     }
 
     @Test
@@ -44,17 +35,29 @@ class UserServiceTest {
 
     @Test
     void update() {
-        service.create(user);
-        user = new User(user.getId(), "user2_login", "User2 Name", "user2@mail.ru", LocalDate.of(1980, 12, 1));
-        service.update(user);
-        assertEquals(user.getName(), service.getById(user.getId()).getName());
+        user = service.create(user);
+
+        user = User.builder()
+                .id(user.getId())
+                .login("user2_login")
+                .name("User2 Name")
+                .email("user2@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        User updatedUser = service.update(user);
+        assertEquals(user.getName(), updatedUser.getName());
     }
 
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void getAll() {
         service.create(user);
-        user = new User(null, "user2_login", "User2 Name", "user2@mail.ru", LocalDate.of(1980, 12, 1));
+        user = User.builder()
+                .login("user2_login")
+                .name("User2 Name")
+                .email("user2@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
         service.create(user);
         assertEquals(2, service.getAll().size());
     }
@@ -69,7 +72,12 @@ class UserServiceTest {
 
     @Test
     void testGetAddDeleteFriend() {
-        User friend = new User(null, "friend_login", "Friend Name", "friend@mail.ru", LocalDate.of(1980, 12, 1));
+        User friend = User.builder()
+                .login("friend_login")
+                .name("Friend Name")
+                .email("friend@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
 
         user = service.create(user);
         friend = service.create(friend);

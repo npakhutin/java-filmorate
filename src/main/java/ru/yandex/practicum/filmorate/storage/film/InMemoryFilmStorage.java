@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exceptions.UnknownFilmException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.HashMap;
@@ -21,9 +20,6 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film update(Film film) {
-        if (!films.containsKey(film.getId())) {
-            throw new UnknownFilmException("Unknown film with id = " + film.getId());
-        }
         films.put(film.getId(), film);
         return film;
     }
@@ -35,9 +31,6 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film getById(Integer id) {
-        if (!films.containsKey(id)) {
-            throw new UnknownFilmException("Unknown film with id = " + id);
-        }
         return films.get(id);
     }
 

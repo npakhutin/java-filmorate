@@ -1,13 +1,12 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.springframework.format.annotation.DateTimeFormat;
 import ru.yandex.practicum.filmorate.model.constraints.MinimalDate;
-import ru.yandex.practicum.filmorate.model.validation.Transfer;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Null;
 import javax.validation.constraints.PastOrPresent;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
@@ -16,14 +15,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Data
-@AllArgsConstructor
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class Film {
-    @Null(groups = {Transfer.New.class})
-    @NotNull(groups = {Transfer.Existing.class})
-    @Setter(AccessLevel.NONE)
-    private Integer id;
-
+public class Film extends IdentifiedModelObject {
     @NotBlank
     private String name;
 
@@ -42,24 +37,11 @@ public class Film {
 
     private final Set<Integer> usersLiked = new HashSet<>();
 
-    public void setId(Integer id) {
-        if (this.id != null) {
-            throw new IllegalArgumentException("Id has already been set");
-        }
-        this.id = id;
-    }
-
     public void setLike(Integer userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("User id should be not null");
-        }
         usersLiked.add(userId);
     }
 
     public void deleteLike(Integer userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("User id should be not null");
-        }
         usersLiked.remove(userId);
     }
 }
