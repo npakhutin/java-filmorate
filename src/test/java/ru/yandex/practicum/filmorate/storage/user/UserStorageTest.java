@@ -49,7 +49,7 @@ public abstract class UserStorageTest<T extends UserStorage> {
                 .email("user@mail.ru")
                 .birthday(LocalDate.of(1980, 12, 1))
                 .build();
-        assertEquals(unknownUser, storage.update(unknownUser ));
+        assertEquals(unknownUser, storage.update(unknownUser));
     }
 
     @Test
