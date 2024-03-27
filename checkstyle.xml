@@ -247,6 +247,7 @@
 		</module>
 		<module name="SuppressWarningsHolder"/>
 		<module name="SuppressionCommentFilter"/>
+		<module name="AvoidStarImport"/>
 	</module>
 	<!--	<module name="NewlineAtEndOfFile"/>-->
 	<module name="SuppressWarningsFilter"/>
