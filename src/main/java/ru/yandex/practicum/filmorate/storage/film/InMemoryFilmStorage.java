@@ -22,7 +22,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public Film update(Film film) {
         if (!films.containsKey(film.getId())) {
-            throw new UnknownFilmException("В хранилище не найден фильм с id = " + film.getId());
+            throw new UnknownFilmException("В хранилище не найден фильм для обновления с id = " + film.getId());
         }
         films.put(film.getId(), film);
         return film;

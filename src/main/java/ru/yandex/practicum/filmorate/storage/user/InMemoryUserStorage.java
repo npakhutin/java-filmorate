@@ -22,7 +22,7 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public User update(User user) {
         if (!users.containsKey(user.getId())) {
-            throw new UnknownUserException("В хранилище не найден пользователь с id = " + user.getId());
+            throw new UnknownUserException("В хранилище не найден пользователь для обновления с id = " + user.getId());
         }
         users.put(user.getId(), user);
         return user;

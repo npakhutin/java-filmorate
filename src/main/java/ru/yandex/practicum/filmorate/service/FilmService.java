@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -40,17 +39,15 @@ public class FilmService {
 
     public Film setLike(Integer id, Integer userId) {
         Film film = filmStorage.getById(id);
-        User user = userStorage.getById(userId);
-        if (user != null) {
-            film.setLike(user.getId());
+        if (userStorage.getById(userId) != null) {
+            film.setLike(userId);
         }
         return film;
     }
 
     public Film deleteLike(Integer id, Integer userId) {
         Film film = filmStorage.getById(id);
-        User user = userStorage.getById(userId);
-        if (user != null) {
+        if (userStorage.getById(userId) != null) {
             film.deleteLike(userId);
         }
         return film;
