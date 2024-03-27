@@ -2,9 +2,8 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.UnknownFilmException;
-import ru.yandex.practicum.filmorate.exception.UnknownUserException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -28,9 +27,6 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        if (filmStorage.getById(film.getId()) == null) {
-            throw new UnknownFilmException("В хранилище не найден фильм для обновления с id = " + film.getId());
-        }
         return filmStorage.update(film);
     }
 
@@ -39,24 +35,24 @@ public class FilmService {
     }
 
     public Film getById(Integer id) {
+        return filmStorage.getById(id);
+    }
+
+    public Film setLike(Integer id, Integer userId) {
         Film film = filmStorage.getById(id);
-        if (film == null) {
-            throw new UnknownFilmException("В хранилище не найден фильм с id = " + id);
+        User user = userStorage.getById(userId);
+        if (user != null) {
+            film.setLike(user.getId());
         }
         return film;
     }
 
-    public Film setLike(Integer id, Integer userId) {
-        Film film = getById(id);
-        checkUserInStorage(userId);
-        film.setLike(userId);
-        return film;
-    }
-
     public Film deleteLike(Integer id, Integer userId) {
-        Film film = getById(id);
-        checkUserInStorage(userId);
-        film.deleteLike(userId);
+        Film film = filmStorage.getById(id);
+        User user = userStorage.getById(userId);
+        if (user != null) {
+            film.deleteLike(userId);
+        }
         return film;
     }
 
@@ -65,11 +61,5 @@ public class FilmService {
                 .sorted(Comparator.comparingInt((Film o) -> o.getUsersLiked().size()).reversed())
                 .limit(count)
                 .collect(Collectors.toList());
-    }
-
-    private void checkUserInStorage(Integer userId) {
-        if (userStorage.getById(userId) == null) {
-            throw new UnknownUserException("В хранилище не найден пользователь с id = " + userId);
-        }
     }
 }

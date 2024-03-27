@@ -1,10 +1,17 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.springframework.validation.annotation.Validated;
 
-import javax.validation.constraints.*;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PastOrPresent;
+import javax.validation.constraints.Pattern;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
@@ -12,7 +19,6 @@ import java.util.Objects;
 import java.util.Set;
 
 @Data
-@Validated
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor

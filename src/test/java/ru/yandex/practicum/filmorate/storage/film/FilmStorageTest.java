@@ -2,11 +2,14 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.exception.UnknownFilmException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public abstract class FilmStorageTest<T extends FilmStorage> {
     private Film film;
@@ -50,7 +53,7 @@ public abstract class FilmStorageTest<T extends FilmStorage> {
                 .duration(180)
                 .build();
 
-        assertEquals(film1, storage.update(film1));
+        assertThrows(UnknownFilmException.class, () -> storage.update(film1));
     }
 
     @Test
