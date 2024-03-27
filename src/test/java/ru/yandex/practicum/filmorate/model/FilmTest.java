@@ -12,11 +12,12 @@ import java.time.LocalDate;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class FilmTest {
+class FilmTest extends IdentifiedModelObjectTest<Film> {
     private static Validator validator;
-    Film film;
-    Set<ConstraintViolation<Film>> violations;
+    private Set<ConstraintViolation<Film>> violations;
+    private Film film;
 
     @BeforeAll
     static void init() {
@@ -25,7 +26,13 @@ class FilmTest {
 
     @BeforeEach
     void setUp() {
-        film = new Film(1, "Film Name", "Film Description", LocalDate.of(1980, 12, 1), 180);
+        film = Film.builder()
+                .name("Film Name")
+                .description("Film Description")
+                .releaseDate(LocalDate.of(1980, 12, 1))
+                .duration(180)
+                .build();
+        entity = film;
     }
 
     @Test
@@ -37,7 +44,6 @@ class FilmTest {
 
     @Test
     void createIdNull() {
-        film.setId(null);
         violations = validator.validate(film, Transfer.New.class);
         assertEquals(0, violations.size());
     }
@@ -47,11 +53,11 @@ class FilmTest {
         film.setId(1);
         violations = validator.validate(film, Transfer.Existing.class);
         assertEquals(0, violations.size());
+        assertThrows(IllegalArgumentException.class, () -> film.setId(2));
     }
 
     @Test
     void updateIdNull() {
-        film.setId(null);
         violations = validator.validate(film, Transfer.Existing.class);
         assertEquals(1, violations.size());
     }
@@ -146,5 +152,18 @@ class FilmTest {
         film.setDuration(180);
         violations = validator.validateProperty(film, "duration", Transfer.New.class, Transfer.Existing.class);
         assertEquals(0, violations.size());
+    }
+
+    @Test
+    void testSetLike() {
+        film.setLike(1);
+        assertEquals(1, film.getUsersLiked().size());
+    }
+
+    @Test
+    void testDeleteLike() {
+        film.setLike(1);
+        film.deleteLike(1);
+        assertEquals(0, film.getUsersLiked().size());
     }
 }

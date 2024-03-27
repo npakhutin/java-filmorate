@@ -1,11 +1,11 @@
-package ru.yandex.practicum.filmorate.exceptions;
+package ru.yandex.practicum.filmorate.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(value = HttpStatus.NOT_FOUND)
-public class UnknownFilmException extends RuntimeException {
-    public UnknownFilmException(String m) {
+public class UnknownUserException extends RuntimeException {
+    public UnknownUserException(String m) {
         super(m);
     }
 }

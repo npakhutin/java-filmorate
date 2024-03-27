@@ -1,28 +1,26 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.springframework.format.annotation.DateTimeFormat;
 import ru.yandex.practicum.filmorate.model.constraints.MinimalDate;
-import ru.yandex.practicum.filmorate.model.validation.Transfer;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Null;
 import javax.validation.constraints.PastOrPresent;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
-@AllArgsConstructor
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class Film {
-    @Null(groups = {Transfer.New.class})
-    @NotNull(groups = {Transfer.Existing.class})
-    private Integer id;
-
+public class Film extends IdentifiedModelObject {
     @NotBlank
     private String name;
 
@@ -38,4 +36,14 @@ public class Film {
     @NotNull
     @Positive
     private Integer duration;
+
+    private final Set<Integer> usersLiked = new HashSet<>();
+
+    public void setLike(Integer userId) {
+        usersLiked.add(userId);
+    }
+
+    public void deleteLike(Integer userId) {
+        usersLiked.remove(userId);
+    }
 }
