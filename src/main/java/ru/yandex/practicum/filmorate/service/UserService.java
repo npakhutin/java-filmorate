@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.UnknownUserException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -13,7 +15,7 @@ public class UserService {
     private final UserStorage storage;
 
     @Autowired
-    public UserService(UserStorage storage) {
+    public UserService(@Qualifier("userDbStorage") UserStorage storage) {
         this.storage = storage;
     }
 
@@ -22,7 +24,8 @@ public class UserService {
     }
 
     public User update(User user) {
-        return storage.update(user);
+        return storage.update(user)
+                .orElseThrow(() -> new UnknownUserException("В хранилище не найден пользователь для обновления с id = " + user.getId()));
     }
 
     public List<User> getAll() {
@@ -30,40 +33,47 @@ public class UserService {
     }
 
     public User getById(Integer id) {
-        return storage.getById(id);
+        return storage.getById(id)
+                .orElseThrow(() -> new UnknownUserException("В хранилище не найден пользователь с id = " + id));
     }
 
-    public User addFriend(Integer id, Integer friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
+    public List<User> addFriend(Integer id, Integer friendId) {
+        if (id.equals(friendId)) {
+            throw new IllegalArgumentException(
+                    "Получены одинаковые идентификаторы пользователей для добавления в друзья, id = " + id);
+        }
+        getById(id);
+        getById(friendId);
+        storage.saveFriendship(id, friendId);
+        User user = storage.getById(id)
+                .orElseThrow(() -> new UnknownUserException("В хранилище не найден пользователь с id = " + id));
 
-        user.addFriend(friend.getId());
-        friend.addFriend(user.getId());
-        return user;
+        return user.getFriends();
     }
 
-    public User deleteFriend(Integer id, Integer friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        user.deleteFriend(friend.getId());
-        friend.deleteFriend(user.getId());
-        return user;
+    public List<User> deleteFriend(Integer id, Integer friendId) {
+        if (id.equals(friendId)) {
+            throw new IllegalArgumentException(
+                    "Получены одинаковые идентификаторы пользователей для удаления из друзей, id = " + id);
+        }
+        getById(id);
+        getById(friendId);
+        storage.deleteFriendship(id, friendId);
+        User user = storage.getById(id)
+                .orElseThrow(() -> new UnknownUserException("В хранилище не найден пользователь с id = " + id));
+        return user.getFriends();
     }
 
     public List<User> getFriends(Integer id) {
-        User user = getById(id);
-        List<Integer> friendIds = user.getFriendIds();
-
-        return friendIds.stream()
-                .map(storage::getById)
-                .collect(Collectors.toList());
+        User user = storage.getById(id)
+                .orElseThrow(() -> new UnknownUserException("В хранилище не найден пользователь с id = " + id));
+        return user.getFriends();
     }
 
     public List<User> getCommonFriends(Integer id, Integer otherId) {
         List<User> friends = getFriends(id);
         List<User> otherFriends = getFriends(otherId);
 
-        friends.retainAll(otherFriends);
-        return friends;
+        return friends.stream().filter(otherFriends::contains).collect(Collectors.toList());
     }
 }

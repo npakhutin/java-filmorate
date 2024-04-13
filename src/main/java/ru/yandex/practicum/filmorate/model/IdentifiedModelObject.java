@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
@@ -13,6 +14,7 @@ import javax.validation.constraints.Null;
 @Data
 @SuperBuilder
 @NoArgsConstructor
+@EqualsAndHashCode(of = {"id"})
 public abstract class IdentifiedModelObject {
     @Null(groups = {Transfer.New.class})
     @NotNull(groups = {Transfer.Existing.class})

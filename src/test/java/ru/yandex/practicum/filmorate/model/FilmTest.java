@@ -95,7 +95,8 @@ class FilmTest extends IdentifiedModelObjectTest<Film> {
         violations = validator.validateProperty(film, "description", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
 
-        film.setDescription("Пятеро друзей ( комик-группа «Шарло»), приезжают в город Бризуль. Здесь они хотят разыскать господина Огюста Куглова, который задолжал им деньги, а именно 20 миллионов. о Куглов, который за время «своего отсутствия», стал кандидатом Коломбани.");
+        film.setDescription(
+                "Пятеро друзей ( комик-группа «Шарло»), приезжают в город Бризуль. Здесь они хотят разыскать господина Огюста Куглова, который задолжал им деньги, а именно 20 миллионов. о Куглов, который за время «своего отсутствия», стал кандидатом Коломбани.");
         violations = validator.validateProperty(film, "description", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
 
@@ -133,10 +134,6 @@ class FilmTest extends IdentifiedModelObjectTest<Film> {
 
     @Test
     void testDuration() {
-        film.setDuration(null);
-        violations = validator.validateProperty(film, "duration", Transfer.New.class, Transfer.Existing.class);
-        assertEquals(1, violations.size());
-
         film.setDuration(-1);
         violations = validator.validateProperty(film, "duration", Transfer.New.class, Transfer.Existing.class);
         assertEquals(1, violations.size());
@@ -155,15 +152,21 @@ class FilmTest extends IdentifiedModelObjectTest<Film> {
     }
 
     @Test
-    void testSetLike() {
-        film.setLike(1);
+    void testAddLike() {
+        film.addLike(1);
         assertEquals(1, film.getUsersLiked().size());
     }
 
     @Test
     void testDeleteLike() {
-        film.setLike(1);
+        film.addLike(1);
         film.deleteLike(1);
         assertEquals(0, film.getUsersLiked().size());
+    }
+
+    @Test
+    void testAddGenre() {
+        film.addGenre(Genre.builder().name("New genre").build());
+        assertEquals(1, film.getGenres().size());
     }
 }

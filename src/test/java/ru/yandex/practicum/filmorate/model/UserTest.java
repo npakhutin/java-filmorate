@@ -175,18 +175,18 @@ public class UserTest extends IdentifiedModelObjectTest<User> {
                 .email("friend@mail.ru")
                 .birthday(LocalDate.of(1980, 12, 1))
                 .build();
-        user.addFriend(friend.getId());
-        assertEquals(List.of(friend.getId()), user.getFriendIds());
+        user.addFriend(friend);
+        assertEquals(List.of(friend), user.getFriends());
 
         ExecutableValidator executableValidator = Validation
                 .buildDefaultValidatorFactory()
                 .getValidator()
                 .forExecutables();
-        Method addFriend = user.getClass().getMethod("addFriend", Integer.class);
+        Method addFriend = user.getClass().getMethod("addFriend", User.class);
         violations = executableValidator.validateParameters(user, addFriend, new Object[]{null});
         assertEquals(1, violations.size());
 
-        assertThrows(IllegalArgumentException.class, () -> user.addFriend(user.getId()));
+        assertThrows(IllegalArgumentException.class, () -> user.addFriend(user));
     }
 
     @Test
@@ -199,11 +199,11 @@ public class UserTest extends IdentifiedModelObjectTest<User> {
                 .email("friend@mail.ru")
                 .birthday(LocalDate.of(1980, 12, 1))
                 .build();
-        user.addFriend(friend.getId());
+        user.addFriend(friend);
 
-        assertEquals(List.of(friend.getId()), user.getFriendIds());
+        assertEquals(List.of(friend), user.getFriends());
 
-        user.deleteFriend(friend.getId());
-        assertEquals(0, user.getFriendIds().size());
+        user.deleteFriend(friend);
+        assertEquals(0, user.getFriends().size());
     }
 }

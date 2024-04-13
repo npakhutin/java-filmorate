@@ -2,13 +2,15 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.annotation.DirtiesContext;
+import org.junit.jupiter.api.TestInstance;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.UnknownFilmException;
 import ru.yandex.practicum.filmorate.exception.UnknownUserException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
@@ -16,12 +18,23 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 
+@SpringBootTest
+@Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
+@Transactional
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FilmServiceTest {
-    private final UserStorage userStorage = new InMemoryUserStorage();
-    private final FilmService service = new FilmService(new InMemoryFilmStorage(), userStorage);
+    private final UserStorage userStorage;
+    private final FilmService service;
     private Film film;
     private User user;
+
+    @Autowired
+    public FilmServiceTest(UserStorage userStorage, FilmService service) {
+        this.userStorage = userStorage;
+        this.service = service;
+    }
 
     @BeforeEach
     void setUp() {
@@ -60,7 +73,6 @@ class FilmServiceTest {
     }
 
     @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void getAll() {
         service.create(film);
         film = Film.builder()
@@ -77,11 +89,11 @@ class FilmServiceTest {
     void getById() {
         service.create(film);
         assertEquals(film, service.getById(film.getId()));
-        assertThrows(UnknownFilmException.class,() -> service.getById(film.getId() + 1));
+        assertThrows(UnknownFilmException.class, () -> service.getById(film.getId() + 1));
     }
 
     @Test
-    void testSetLike() {
+    void testAddLike() {
         service.create(film);
         userStorage.create(user);
 
@@ -105,16 +117,27 @@ class FilmServiceTest {
 
     @Test
     void testTopPopular() {
-        for (int filmNum = 0; filmNum < 12; filmNum++) {
+        for (int i = 0; i < 12; i++) {
             film = Film.builder()
-                    .name("Film Name" + filmNum)
-                    .description("Film Description" + filmNum)
+                    .name("Film Name" + i)
+                    .description("Film Description" + i)
                     .releaseDate(LocalDate.of(1980, 12, 1))
                     .duration(180)
                     .build();
             film = service.create(film);
+
+            user = User.builder()
+                    .login("user_login" + i)
+                    .name("User Name" + i)
+                    .email("user" + i + "@mail.ru")
+                    .birthday(LocalDate.of(1980, 12, 1))
+                    .build();
+            user = userStorage.create(user);
+
             for (int userId = 1; userId < film.getId(); userId++) {
-                film.setLike(userId);
+
+                service.setLike(film.getId(), userId);
+                //film.setLike(userId);
             }
         }
         List<Film> topFilms = service.getTopPopular(1);

@@ -24,7 +24,8 @@ public class MinimalDateValidator implements ConstraintValidator<MinimalDate, Lo
         if (localDate != null && !localDate.isBefore(minDate)) {
             return true;
         } else {
-            log.warn("Date should be greater than {}", minDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)));
+            log.warn("Date should be greater than {}",
+                     minDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)));
             return false;
         }
     }

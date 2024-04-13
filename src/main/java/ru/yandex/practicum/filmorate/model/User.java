@@ -1,5 +1,8 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -22,39 +25,37 @@ import java.util.Set;
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
+@JsonIdentityInfo(property = "id", generator = ObjectIdGenerators.PropertyGenerator.class)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class User extends IdentifiedModelObject {
+    private final Set<User> friends = new HashSet<>();
     @NotBlank
     @Pattern(regexp = "^[\\w.-]{0,19}[0-9a-zA-Z]$")
     private String login;
-
     @Getter(AccessLevel.NONE)
     private String name;
-
     @Email(regexp = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$")
     @NotBlank
     private String email;
-
     @PastOrPresent
     private LocalDate birthday;
-
-    private final Set<Integer> friendIds = new HashSet<>();
 
     public String getName() {
         return name == null || name.isEmpty() ? login : name;
     }
 
-    public List<Integer> getFriendIds() {
-        return List.copyOf(friendIds);
+    public List<User> getFriends() {
+        return List.copyOf(friends);
     }
 
-    public void addFriend(@NotNull Integer userId) {
-        if (Objects.equals(userId, this.getId())) {
-            throw new IllegalArgumentException("Невозможно добавить самого себя в список друзей, id = " + userId);
+    public void addFriend(@NotNull User user) {
+        if (Objects.equals(user, this)) {
+            throw new IllegalArgumentException("Невозможно добавить самого себя в список друзей, id = " + user.getId());
         }
-        friendIds.add(userId);
+        friends.add(user);
     }
 
-    public void deleteFriend(Integer userId) {
-        friendIds.remove(userId);
+    public void deleteFriend(User user) {
+        friends.remove(user);
     }
 }

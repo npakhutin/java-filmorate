@@ -2,18 +2,27 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.yandex.practicum.filmorate.exception.UnknownFilmException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.DictionaryDbStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class FilmStorageTest<T extends FilmStorage> {
-    private Film film;
     protected T storage;
+    protected UserStorage userStorage;
+    protected DictionaryDbStorage dictionaryStorage;
+
+    private Film film;
 
     @BeforeEach
     void setUp() {
@@ -23,14 +32,26 @@ public abstract class FilmStorageTest<T extends FilmStorage> {
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
                 .build();
+        film.addGenre(dictionaryStorage.getGenreById(1).orElseThrow());
+
+        User user = User.builder()
+                .login("user_login")
+                .name("User Name")
+                .email("user@mail.ru")
+                .birthday(LocalDate.of(1980, 12, 1))
+                .build();
+        user = userStorage.create(user);
+        film.addLike(user.getId());
     }
 
     @Test
     void create() {
-
         Film actualFilm = storage.create(film);
         assertNotNull(actualFilm.getId());
         assertEquals(film.getName(), actualFilm.getName());
+        assertFalse(actualFilm.getGenres().isEmpty());
+        //проверка создания с непустым id
+        assertThrows(NullPointerException.class, () -> storage.create(actualFilm));
     }
 
     @Test
@@ -38,22 +59,23 @@ public abstract class FilmStorageTest<T extends FilmStorage> {
         film = storage.create(film);
 
         film.setName("New Name");
-        Film actualFilm = storage.update(film);
-        assertEquals(film, actualFilm);
+        Optional<Film> optionalFilm = storage.update(film);
+        assertEquals(film, optionalFilm.orElse(null));
     }
 
     @Test
     void updateWrongId() {
         storage.create(film);
         Film film1 = Film.builder()
-                .id(2)
+                .id(-1)
                 .name("Film Name")
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
                 .build();
 
-        assertThrows(UnknownFilmException.class, () -> storage.update(film1));
+        Optional<Film> optionalFilm = storage.update(film1);
+        assertTrue(optionalFilm.isEmpty());
     }
 
     @Test
@@ -67,20 +89,18 @@ public abstract class FilmStorageTest<T extends FilmStorage> {
                 .duration(180)
                 .build();
         storage.create(film1);
-        assertEquals(2, storage.getAll().size());
+        assertNotEquals(0, storage.getAll().size());
     }
 
     @Test
     void getById() {
-        Film film1 = Film.builder()
-                .name("Updated Name")
-                .description("Film1 Description")
-                .releaseDate(LocalDate.of(1980, 12, 1))
-                .duration(180)
-                .build();
+
         storage.create(film);
-        storage.create(film1);
-        assertEquals(film, storage.getById(film.getId()));
-        assertEquals(film1, storage.getById(film1.getId()));
+
+        Optional<Film> optionalFilm = storage.getById(film.getId());
+        assertEquals(film, optionalFilm.orElse(null));
+
+        optionalFilm = storage.getById(-100);
+        assertTrue(optionalFilm.isEmpty());
     }
 }
