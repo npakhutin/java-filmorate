@@ -180,12 +180,7 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void saveFilmGenres(Film film) {
-        String sql = "SELECT * FROM GENRES;";
-        jdbcTemplate.query(sql, rs -> {
-            log.info("Genre id = {}, name = {}", rs.getInt("ID"), rs.getString("NAME"));
-        });
-
-        sql = "DELETE FROM GENRES_FILMS WHERE FILM_ID = ?;";
+        String sql = "DELETE FROM GENRES_FILMS WHERE FILM_ID = ?;";
         jdbcTemplate.update(sql, film.getId());
 
         sql = "MERGE INTO GENRES_FILMS(GENRE_ID, FILM_ID) KEY(GENRE_ID, FILM_ID) VALUES(?, ?);";
