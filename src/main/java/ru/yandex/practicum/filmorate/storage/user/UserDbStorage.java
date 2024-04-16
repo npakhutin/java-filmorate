@@ -1,8 +1,9 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
@@ -30,7 +31,7 @@ public class UserDbStorage implements UserStorage {
         if (user.getId() != null) {
             throw new IllegalArgumentException("Поле id создаваемого пользователя должно быть пустым");
         }
-        String sql = "INSERT INTO \"USER\" (LOGIN, NAME, EMAIL, BIRTHDAY) VALUES(?, ?, ?, ?);";
+        String sql = "INSERT INTO USERS (LOGIN, NAME, EMAIL, BIRTHDAY) VALUES(?, ?, ?, ?);";
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -43,7 +44,6 @@ public class UserDbStorage implements UserStorage {
         }, keyHolder);
 
         user.setId(keyHolder.getKeyAs(Integer.class));
-        saveFriendship(user);
         return user;
     }
 
@@ -52,7 +52,7 @@ public class UserDbStorage implements UserStorage {
         if (user.getId() == null) {
             throw new NullPointerException("Поле id обновляемого пользователя не должно быть пустым");
         }
-        String sql = "UPDATE \"USER\" SET LOGIN=?, NAME=?, EMAIL=?, BIRTHDAY=? WHERE ID=?;";
+        String sql = "UPDATE USERS SET LOGIN=?, NAME=?, EMAIL=?, BIRTHDAY=? WHERE ID=?;";
 
         int rowCount = jdbcTemplate.update(sql,
                                            user.getLogin(),
@@ -63,49 +63,66 @@ public class UserDbStorage implements UserStorage {
         if (rowCount == 0) {
             return Optional.empty();
         } else {
-            saveFriendship(user);
             return Optional.of(user);
         }
     }
 
     @Override
     public List<User> getAll() {
-        String sql = "SELECT ID, LOGIN, NAME, EMAIL, BIRTHDAY FROM \"USER\";";
-
-        List<User> users = jdbcTemplate.query(sql, this::mapRowToUser);
-        for (User user : users) {
-            loadFriendship(user);
-        }
-        return users;
+        String sql = "SELECT ID, LOGIN, NAME, EMAIL, BIRTHDAY FROM USERS;";
+        return jdbcTemplate.query(sql, this::mapRowToUser);
     }
 
     @Override
-    public Optional<User> getById(Integer id) {
-        String sql = "SELECT ID, LOGIN, NAME, EMAIL, BIRTHDAY FROM \"USER\" WHERE ID = ?";
+    public Optional<User> getById(int id) {
+        String sql = "SELECT ID, LOGIN, NAME, EMAIL, BIRTHDAY FROM USERS WHERE ID = ?";
 
-        try {
-            User user = jdbcTemplate.queryForObject(sql, this::mapRowToUser, id);
-            assert user != null;
-            loadFriendship(user);
-            return Optional.of(user);
-        } catch (EmptyResultDataAccessException e) {
+        List<User> users = jdbcTemplate.query(sql, this::mapRowToUser, id);
+        if (users.isEmpty()) {
             return Optional.empty();
         }
+        return Optional.of(users.get(0));
     }
 
     @Override
-    public void saveFriendship(Integer requesterId, Integer responderId) {
-        if (requesterId == null || responderId == null) {
-            throw new NullPointerException("Идентификаторы пользователей для добавления в друзья не должны быть пустыми");
-        }
-        String sql = "MERGE INTO FRIENDSHIP(REQUESTER_ID, RESPONDER_ID) KEY(REQUESTER_ID, RESPONDER_ID) VALUES(?, ?);";
+    public void saveFriendship(int requesterId, int responderId) {
+        String sql = "MERGE INTO FRIENDS(REQUESTER_ID, RESPONDER_ID) KEY(REQUESTER_ID, RESPONDER_ID) VALUES(?, ?);";
         jdbcTemplate.update(sql, requesterId, responderId);
     }
 
     @Override
-    public void deleteFriendship(Integer requesterId, Integer responderId) {
-        String sql = "DELETE FROM FRIENDSHIP WHERE REQUESTER_ID = ? AND RESPONDER_ID = ?;";
+    public void deleteFriendship(int requesterId, int responderId) {
+        String sql = "DELETE FROM FRIENDS WHERE REQUESTER_ID = ? AND RESPONDER_ID = ?;";
         jdbcTemplate.update(sql, requesterId, responderId);
+    }
+
+    @Override
+    public List<User> getCommonFriends(int id, int otherId) {
+        String sql =
+                "SELECT u.* FROM USERS u\n" +
+                "JOIN (\n" +
+                "    SELECT RESPONDER_ID FROM FRIENDS f WHERE REQUESTER_ID = :first_user\n" +
+                "        AND RESPONDER_ID <> :second_user\n" +
+                "    UNION \n" +
+                "    SELECT RESPONDER_ID FROM FRIENDS f WHERE REQUESTER_ID = :second_user\n" +
+                "        AND RESPONDER_ID <> :first_user\n" +
+                ") ff ON u.id = ff.RESPONDER_ID;\n";
+
+        NamedParameterJdbcTemplate namedParameterJdbcTemplate =
+                new NamedParameterJdbcTemplate(jdbcTemplate.getDataSource());
+        MapSqlParameterSource paramSource = new MapSqlParameterSource();
+        paramSource.addValue("first_user", id);
+        paramSource.addValue("second_user", otherId);
+        return namedParameterJdbcTemplate.query(sql, paramSource, this::mapRowToUser);
+    }
+
+    @Override
+    public List<User> getUserFriends(int userId) {
+        String sql =
+                "SELECT u.* FROM USERS u\n" +
+                "JOIN FRIENDS f ON u.ID = f.RESPONDER_ID \n" +
+                "WHERE f.REQUESTER_ID = ?";
+        return jdbcTemplate.query(sql, this::mapRowToUser, userId);
     }
 
     private User mapRowToUser(ResultSet rs, int rowNum) throws SQLException {
@@ -116,24 +133,6 @@ public class UserDbStorage implements UserStorage {
                 .email(rs.getString("EMAIL"))
                 .birthday(rs.getDate("BIRTHDAY").toLocalDate())
                 .build();
-    }
-
-    private void saveFriendship(User user) {
-        String sql = "DELETE FROM FRIENDSHIP WHERE REQUESTER_ID = ?;";
-        jdbcTemplate.update(sql, user.getId());
-
-        for (User friend : user.getFriends()) {
-            saveFriendship(user.getId(), friend.getId());
-        }
-    }
-
-    private void loadFriendship(User user) {
-        String sql =
-                "SELECT U.ID, U.LOGIN, U.NAME, U.EMAIL, U.BIRTHDAY FROM \"USER\" U\n" + "JOIN FRIENDSHIP F ON U.ID = F.RESPONDER_ID \n" + "WHERE F.REQUESTER_ID = ?";
-        List<User> friends = jdbcTemplate.query(sql, this::mapRowToUser, user.getId());
-        for (User friend : friends) {
-            user.addFriend(friend);
-        }
     }
 
 }

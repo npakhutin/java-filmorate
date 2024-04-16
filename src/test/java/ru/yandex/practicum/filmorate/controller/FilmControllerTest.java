@@ -15,15 +15,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.FilmorateApplication;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = FilmorateApplication.class)
 @AutoConfigureMockMvc
-@Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
+@Sql(scripts = {"classpath:del_tables.sql", "classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
 @Transactional
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FilmControllerTest {
@@ -54,6 +53,7 @@ class FilmControllerTest {
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
+                .mpa(MpaRating.builder().id(1).build())
                 .build();
         mapper.registerModule(new JavaTimeModule());
     }
@@ -104,6 +104,7 @@ class FilmControllerTest {
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
+                .mpa(MpaRating.builder().id(1).build())
                 .build();
         String jsonRq = mapper.writeValueAsString(film);
         mockMvc.perform(put("/films").contentType(MediaType.APPLICATION_JSON)
@@ -149,14 +150,12 @@ class FilmControllerTest {
                 .build();
         user = postUser(user);
 
-        String jsonRs = mockMvc.perform(put(String.format("/films/%d/like/%d", film.getId(), user.getId())).contentType(
+        mockMvc.perform(put(String.format("/films/%d/like/%d", film.getId(), user.getId())).contentType(
                         MediaType.APPLICATION_JSON).characterEncoding("utf-8").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-        film = mapper.readValue(jsonRs, Film.class);
-        assertEquals(Set.of(1), film.getUsersLiked());
 
         mockMvc.perform(put(String.format("/films/%d/like/%d",
                                           100,
@@ -164,14 +163,12 @@ class FilmControllerTest {
                                 .characterEncoding("utf-8")
                                 .accept(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
 
-        jsonRs = mockMvc.perform(delete(String.format("/films/%d/like/%d", film.getId(), user.getId())).contentType(
+        mockMvc.perform(delete(String.format("/films/%d/like/%d", film.getId(), user.getId())).contentType(
                         MediaType.APPLICATION_JSON).characterEncoding("utf-8").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-        film = mapper.readValue(jsonRs, Film.class);
-        assertEquals(0, film.getUsersLiked().size());
 
         mockMvc.perform(delete(String.format("/films/%d/like/%d",
                                              100,
@@ -181,7 +178,6 @@ class FilmControllerTest {
     }
 
     @Test
-    //@DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     public void testGetTopPopular() throws Exception {
 
         List<User> users = new ArrayList<>();
@@ -191,6 +187,7 @@ class FilmControllerTest {
                     .description("Film Description" + filmNum)
                     .releaseDate(LocalDate.of(1980, 12, 1))
                     .duration(180)
+                    .mpa(MpaRating.builder().id(1).build())
                     .build();
             User user = User.builder()
                     .login("user_login" + filmNum)

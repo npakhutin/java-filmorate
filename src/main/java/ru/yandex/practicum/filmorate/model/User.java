@@ -12,14 +12,9 @@ import lombok.experimental.SuperBuilder;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PastOrPresent;
 import javax.validation.constraints.Pattern;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 @Data
 @SuperBuilder
@@ -28,7 +23,6 @@ import java.util.Set;
 @JsonIdentityInfo(property = "id", generator = ObjectIdGenerators.PropertyGenerator.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class User extends IdentifiedModelObject {
-    private final Set<User> friends = new HashSet<>();
     @NotBlank
     @Pattern(regexp = "^[\\w.-]{0,19}[0-9a-zA-Z]$")
     private String login;
@@ -42,20 +36,5 @@ public class User extends IdentifiedModelObject {
 
     public String getName() {
         return name == null || name.isEmpty() ? login : name;
-    }
-
-    public List<User> getFriends() {
-        return List.copyOf(friends);
-    }
-
-    public void addFriend(@NotNull User user) {
-        if (Objects.equals(user, this)) {
-            throw new IllegalArgumentException("Невозможно добавить самого себя в список друзей, id = " + user.getId());
-        }
-        friends.add(user);
-    }
-
-    public void deleteFriend(User user) {
-        friends.remove(user);
     }
 }

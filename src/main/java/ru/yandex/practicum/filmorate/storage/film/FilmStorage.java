@@ -12,9 +12,11 @@ public interface FilmStorage {
 
     List<Film> getAll();
 
-    Optional<Film> getById(Integer id);
+    Optional<Film> getById(int id);
 
-    void saveLike(Integer filmId, Integer userId);
+    void saveLike(int filmId, int userId);
 
-    void deleteLike(Integer filmId, Integer userId);
+    void deleteLike(int filmId, int userId);
+
+    List<Film> getTopPopular(Integer count);
 }

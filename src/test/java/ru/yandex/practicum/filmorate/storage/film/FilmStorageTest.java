@@ -3,7 +3,7 @@ package ru.yandex.practicum.filmorate.storage.film;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.DictionaryDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -31,17 +31,9 @@ public abstract class FilmStorageTest<T extends FilmStorage> {
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
+                .mpa(MpaRating.builder().id(1).name("G").build())
                 .build();
         film.addGenre(dictionaryStorage.getGenreById(1).orElseThrow());
-
-        User user = User.builder()
-                .login("user_login")
-                .name("User Name")
-                .email("user@mail.ru")
-                .birthday(LocalDate.of(1980, 12, 1))
-                .build();
-        user = userStorage.create(user);
-        film.addLike(user.getId());
     }
 
     @Test
@@ -72,6 +64,7 @@ public abstract class FilmStorageTest<T extends FilmStorage> {
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
+                .mpa(MpaRating.builder().id(1).build())
                 .build();
 
         Optional<Film> optionalFilm = storage.update(film1);
@@ -87,6 +80,7 @@ public abstract class FilmStorageTest<T extends FilmStorage> {
                 .description("Film1 Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
+                .mpa(MpaRating.builder().id(1).build())
                 .build();
         storage.create(film1);
         assertNotEquals(0, storage.getAll().size());
@@ -94,7 +88,6 @@ public abstract class FilmStorageTest<T extends FilmStorage> {
 
     @Test
     void getById() {
-
         storage.create(film);
 
         Optional<Film> optionalFilm = storage.getById(film.getId());

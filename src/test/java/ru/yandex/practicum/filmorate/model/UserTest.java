@@ -8,10 +8,7 @@ import ru.yandex.practicum.filmorate.model.validation.Transfer;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
-import javax.validation.executable.ExecutableValidator;
-import java.lang.reflect.Method;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -163,47 +160,5 @@ public class UserTest extends IdentifiedModelObjectTest<User> {
         user.setBirthday(LocalDate.of(1995, 12, 27));
         violations = validator.validateProperty(user, "birthday", Transfer.New.class, Transfer.Existing.class);
         assertEquals(0, violations.size());
-    }
-
-    @Test
-    void testAddFriend() throws Exception {
-        user.setId(1);
-        User friend = User.builder()
-                .id(2)
-                .login("friend_login")
-                .name("Friend Name")
-                .email("friend@mail.ru")
-                .birthday(LocalDate.of(1980, 12, 1))
-                .build();
-        user.addFriend(friend);
-        assertEquals(List.of(friend), user.getFriends());
-
-        ExecutableValidator executableValidator = Validation
-                .buildDefaultValidatorFactory()
-                .getValidator()
-                .forExecutables();
-        Method addFriend = user.getClass().getMethod("addFriend", User.class);
-        violations = executableValidator.validateParameters(user, addFriend, new Object[]{null});
-        assertEquals(1, violations.size());
-
-        assertThrows(IllegalArgumentException.class, () -> user.addFriend(user));
-    }
-
-    @Test
-    void testDeleteFriend() {
-        user.setId(1);
-        User friend = User.builder()
-                .id(2)
-                .login("friend_login")
-                .name("Friend Name")
-                .email("friend@mail.ru")
-                .birthday(LocalDate.of(1980, 12, 1))
-                .build();
-        user.addFriend(friend);
-
-        assertEquals(List.of(friend), user.getFriends());
-
-        user.deleteFriend(friend);
-        assertEquals(0, user.getFriends().size());
     }
 }

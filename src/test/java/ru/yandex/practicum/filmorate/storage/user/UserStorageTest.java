@@ -37,11 +37,11 @@ public abstract class UserStorageTest<T extends UserStorage> {
     @Test
     void testCreate() {
         friend = storage.create(friend);
-        user.addFriend(friend);
         User actualUser = storage.create(user);
+        storage.saveFriendship(actualUser.getId(), friend.getId());
         assertNotNull(actualUser.getId());
         assertEquals(user.getName(), actualUser.getName());
-        assertEquals(1, actualUser.getFriends().size());
+        assertEquals(1, storage.getUserFriends(actualUser.getId()).size());
         //проверка создания с непустым id
         assertThrows(IllegalArgumentException.class, () -> storage.create(actualUser));
     }
@@ -119,8 +119,6 @@ public abstract class UserStorageTest<T extends UserStorage> {
         storage.saveFriendship(user.getId(), user2.getId());
         user = storage.getById(user.getId()).orElse(null);
         assertNotNull(user);
-        assertEquals(1, user.getFriends().size());
-
-        assertThrows(NullPointerException.class, () -> storage.saveFriendship(null, null));
+        assertEquals(1, storage.getUserFriends(user.getId()).size());
     }
 }

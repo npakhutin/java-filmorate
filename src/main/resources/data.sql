@@ -1,6 +1,6 @@
 MERGE
 INTO
-	GENRE t
+	GENRES t
 		USING (
 VALUES 
 		('Комедия'),

@@ -4,8 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(value = HttpStatus.NOT_FOUND)
-public class UnknownGenreException extends RuntimeException {
-    public UnknownGenreException(String m) {
+public class UnknownModelObjectException extends RuntimeException {
+    public UnknownModelObjectException(String m) {
         super(m);
     }
 }

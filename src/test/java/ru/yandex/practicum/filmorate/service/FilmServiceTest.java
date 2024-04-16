@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
-import ru.yandex.practicum.filmorate.exception.UnknownFilmException;
-import ru.yandex.practicum.filmorate.exception.UnknownUserException;
+import ru.yandex.practicum.filmorate.exception.UnknownModelObjectException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 
 @SpringBootTest
-@Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
+@Sql(scripts = {"classpath:del_tables.sql", "classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
 @Transactional
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FilmServiceTest {
@@ -43,6 +43,7 @@ class FilmServiceTest {
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
+                .mpa(MpaRating.builder().id(1).name("G").build())
                 .build();
         user = User.builder()
                 .login("user_login")
@@ -66,6 +67,7 @@ class FilmServiceTest {
                 .name("Updated Name")
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
+                .mpa(MpaRating.builder().id(1).name("G").build())
                 .duration(180)
                 .build();
         service.update(film);
@@ -79,6 +81,7 @@ class FilmServiceTest {
                 .name("Updated Name")
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
+                .mpa(MpaRating.builder().id(1).name("G").build())
                 .duration(180)
                 .build();
         service.create(film);
@@ -89,7 +92,7 @@ class FilmServiceTest {
     void getById() {
         service.create(film);
         assertEquals(film, service.getById(film.getId()));
-        assertThrows(UnknownFilmException.class, () -> service.getById(film.getId() + 1));
+        assertThrows(UnknownModelObjectException.class, () -> service.getById(film.getId() + 1));
     }
 
     @Test
@@ -98,7 +101,7 @@ class FilmServiceTest {
         userStorage.create(user);
 
         film = service.setLike(film.getId(), user.getId());
-        assertEquals(1, film.getUsersLiked().size());
+        assertEquals(1, film.getLikesCount());
     }
 
     @Test
@@ -107,12 +110,12 @@ class FilmServiceTest {
         userStorage.create(user);
 
         film = service.setLike(film.getId(), user.getId());
-        assertEquals(1, film.getUsersLiked().size());
+        assertEquals(1, film.getLikesCount());
 
         film = service.deleteLike(film.getId(), user.getId());
-        assertEquals(0, film.getUsersLiked().size());
+        assertEquals(0, film.getLikesCount());
 
-        assertThrows(UnknownUserException.class, () -> service.deleteLike(film.getId(), 100));
+        assertThrows(UnknownModelObjectException.class, () -> service.deleteLike(film.getId(), 100));
     }
 
     @Test
@@ -123,6 +126,7 @@ class FilmServiceTest {
                     .description("Film Description" + i)
                     .releaseDate(LocalDate.of(1980, 12, 1))
                     .duration(180)
+                    .mpa(MpaRating.builder().id(1).build())
                     .build();
             film = service.create(film);
 

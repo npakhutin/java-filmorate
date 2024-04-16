@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
-import ru.yandex.practicum.filmorate.exception.UnknownUserException;
+import ru.yandex.practicum.filmorate.exception.UnknownModelObjectException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 
 @SpringBootTest
-@Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
+@Sql(scripts = {"classpath:del_tables.sql", "classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
 @Transactional
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UserServiceTest {
@@ -78,8 +78,7 @@ class UserServiceTest {
     void getById() {
         service.create(user);
         assertEquals(user, service.getById(user.getId()));
-        assertThrows(UnknownUserException.class, () -> service.getById(user.getId() + 1));
-        assertThrows(UnknownUserException.class, () -> service.getById(null));
+        assertThrows(UnknownModelObjectException.class, () -> service.getById(user.getId() + 1));
     }
 
     @Test
@@ -94,10 +93,12 @@ class UserServiceTest {
         user = service.create(user);
         friend = service.create(friend);
 
-        List<User> actualFriends = service.addFriend(user.getId(), friend.getId());
+        service.addFriend(user.getId(), friend.getId());
+        List<User> actualFriends = service.getUserFriends(user.getId());
         assertEquals(List.of(friend), actualFriends);
 
-        actualFriends = service.deleteFriend(user.getId(), friend.getId());
+        service.deleteFriend(user.getId(), friend.getId());
+        actualFriends = service.getUserFriends(user.getId());
         assertEquals(0, actualFriends.size());
     }
 }

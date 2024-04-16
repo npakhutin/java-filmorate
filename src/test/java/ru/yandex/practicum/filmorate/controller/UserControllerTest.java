@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.hamcrest.Matchers;
@@ -18,10 +17,8 @@ import ru.yandex.practicum.filmorate.FilmorateApplication;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         classes = FilmorateApplication.class)
 @AutoConfigureMockMvc
-@Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
+@Sql(scripts = {"classpath:del_tables.sql", "classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
 @Transactional
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UserControllerTest {
@@ -144,29 +141,21 @@ class UserControllerTest {
         user = postUser(user);
         friend = postUser(friend);
 
-        String jsonRs =
-                mockMvc.perform(put(String.format("/users/%d/friends/%d", user.getId(), friend.getId())).contentType(
-                                        MediaType.APPLICATION_JSON).characterEncoding("utf-8")
-                                        .accept(MediaType.APPLICATION_JSON))
-                        .andExpect(status().isOk())
-                        .andReturn()
-                        .getResponse()
-                        .getContentAsString();
+        mockMvc.perform(put(String.format("/users/%d/friends/%d", user.getId(), friend.getId())).contentType(
+                                MediaType.APPLICATION_JSON).characterEncoding("utf-8")
+                                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-        List<User> actualFriends = mapper.readValue(jsonRs, new TypeReference<>() {});
-        assertEquals(List.of(friend), actualFriends);
-
-        jsonRs =
-                mockMvc.perform(delete(String.format("/users/%d/friends/%d", user.getId(), friend.getId())).contentType(
-                                        MediaType.APPLICATION_JSON).characterEncoding("utf-8")
-                                        .accept(MediaType.APPLICATION_JSON))
-                        .andExpect(status().isOk())
-                        .andReturn()
-                        .getResponse()
-                        .getContentAsString();
-
-        actualFriends = mapper.readValue(jsonRs, new TypeReference<>() {});
-        assertEquals(0, actualFriends.size());
+        mockMvc.perform(delete(String.format("/users/%d/friends/%d", user.getId(), friend.getId())).contentType(
+                                MediaType.APPLICATION_JSON).characterEncoding("utf-8")
+                                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
     }
 
     @Test
@@ -315,8 +304,6 @@ class UserControllerTest {
                                 MediaType.APPLICATION_JSON).characterEncoding("utf-8")
                                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$", hasSize(2)))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();

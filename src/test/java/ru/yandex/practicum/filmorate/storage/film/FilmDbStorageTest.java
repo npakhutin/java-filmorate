@@ -8,8 +8,10 @@ import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.storage.DictionaryDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
+import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
+
 @SpringBootTest
-@Sql({"classpath:/schema.sql", "classpath:/data.sql"})
+@Sql(scripts = {"classpath:del_tables.sql", "classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
 class FilmDbStorageTest extends FilmStorageTest<FilmDbStorage> {
     @Autowired
     private JdbcTemplate jdbcTemplate;

@@ -16,9 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 
 @SpringBootTest
-@Sql({"classpath:schema.sql", "classpath:data.sql"})
+@Sql(scripts = {"classpath:del_tables.sql", "classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
 class DictionaryDbStorageTest {
     private final DictionaryDbStorage storage;
     private final FilmStorage filmStorage;
@@ -55,6 +56,7 @@ class DictionaryDbStorageTest {
                 .build();
         film.addGenre(storage.getGenreById(1).orElseThrow(() -> new RuntimeException("Не найден жанр")));
         film.addGenre(storage.getGenreById(2).orElseThrow(() -> new RuntimeException("Не найден жанр")));
+        film.setMpa(storage.getMpaById(1).orElseThrow(() -> new RuntimeException("Не найден рейтинг MPA")));
         film = filmStorage.create(film);
 
         List<Genre> genres = storage.getGenresByFilmId(film.getId());

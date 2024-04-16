@@ -17,32 +17,10 @@ import java.util.Objects;
 public class ErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleUnknownFilmException(final UnknownFilmException e) {
+    public Map<String, String> handleUnknownModelObjectException(final UnknownModelObjectException e) {
         log.warn(e.getMessage());
         return Map.of("errorMessage", e.getMessage());
     }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleUnknownUserException(final UnknownUserException e) {
-        log.warn(e.getMessage());
-        return Map.of("errorMessage", e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleUnknownMpaException(final UnknownMpaException e) {
-        log.warn(e.getMessage());
-        return Map.of("errorMessage", e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleUnknownGenreException(final UnknownGenreException e) {
-        log.warn(e.getMessage());
-        return Map.of("errorMessage", e.getMessage());
-    }
-
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)

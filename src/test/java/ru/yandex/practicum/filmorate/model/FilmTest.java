@@ -31,6 +31,7 @@ class FilmTest extends IdentifiedModelObjectTest<Film> {
                 .description("Film Description")
                 .releaseDate(LocalDate.of(1980, 12, 1))
                 .duration(180)
+                .mpa(MpaRating.builder().name("Test rating").build())
                 .build();
         entity = film;
     }
@@ -152,16 +153,11 @@ class FilmTest extends IdentifiedModelObjectTest<Film> {
     }
 
     @Test
-    void testAddLike() {
-        film.addLike(1);
-        assertEquals(1, film.getUsersLiked().size());
-    }
-
-    @Test
-    void testDeleteLike() {
-        film.addLike(1);
-        film.deleteLike(1);
-        assertEquals(0, film.getUsersLiked().size());
+    void testAddDeleteLike() {
+        film.addLike();
+        assertEquals(1, film.getLikesCount());
+        film.deleteLike();
+        assertEquals(0, film.getLikesCount());
     }
 
     @Test
