@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -28,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Repository
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
@@ -178,7 +180,12 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void saveFilmGenres(Film film) {
-        String sql = "DELETE FROM GENRES_FILMS WHERE FILM_ID = ?;";
+        String sql = "SELECT * FROM GENRES;";
+        jdbcTemplate.query(sql, rs -> {
+            log.info("Genre id = {}, name = {}", rs.getInt("ID"), rs.getString("NAME"));
+        });
+
+        sql = "DELETE FROM GENRES_FILMS WHERE FILM_ID = ?;";
         jdbcTemplate.update(sql, film.getId());
 
         sql = "MERGE INTO GENRES_FILMS(GENRE_ID, FILM_ID) KEY(GENRE_ID, FILM_ID) VALUES(?, ?);";
