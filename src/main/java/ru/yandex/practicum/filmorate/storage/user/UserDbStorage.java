@@ -99,15 +99,11 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getCommonFriends(int id, int otherId) {
         String sql =
-                "SELECT u.* FROM USERS u\n" +
-                "JOIN (\n" +
-                "    SELECT RESPONDER_ID FROM FRIENDS f WHERE REQUESTER_ID = :first_user\n" +
-                "        AND RESPONDER_ID <> :second_user\n" +
-                "    UNION \n" +
-                "    SELECT RESPONDER_ID FROM FRIENDS f WHERE REQUESTER_ID = :second_user\n" +
-                "        AND RESPONDER_ID <> :first_user\n" +
-                ") ff ON u.id = ff.RESPONDER_ID;\n";
-
+            "SELECT u.* FROM USERS u\n" +
+            "   JOIN friends f1 ON u.id = f1.RESPONDER_ID\n" +
+            "   JOIN friends f2 ON u.id = f2.RESPONDER_ID \n" +
+            "   WHERE f1.REQUESTER_ID = :first_user AND f1.RESPONDER_ID <> :second_user\n" +
+            "       AND f2.REQUESTER_ID = :second_user AND f2.RESPONDER_ID <> :first_user\n";
         NamedParameterJdbcTemplate namedParameterJdbcTemplate =
                 new NamedParameterJdbcTemplate(jdbcTemplate.getDataSource());
         MapSqlParameterSource paramSource = new MapSqlParameterSource();

@@ -71,7 +71,7 @@ public class FilmDbStorage implements FilmStorage {
         if (film.getId() == null) {
             throw new NullPointerException("Поле id обновляемого фильма не должно быть пустым");
         }
-        String sql = "UPDATE FILMS SET NAME=?, DESCRIPTION=?, RELEASE_DATE=?, DURATION=?, MPA_ID=? WHERE ID=?;";
+        String sql = "UPDATE FILMS SET NAME=?, DESCRIPTION=?, RELEASE_DATE=?, DURATION=?, MPA_ID=?, LIKES_COUNT=? WHERE ID=?;";
 
         int rowCount = jdbcTemplate.update(sql,
                                            film.getName(),
@@ -79,6 +79,7 @@ public class FilmDbStorage implements FilmStorage {
                                            film.getReleaseDate(),
                                            film.getDuration(),
                                            Optional.ofNullable(film.getMpa()).map(MpaRating::getId).orElse(null),
+                                           film.getLikesCount(),
                                            film.getId());
         if (rowCount == 0) {
             return Optional.empty();
@@ -90,7 +91,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getAll() {
-        String sql = "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_ID FROM FILMS";
+        String sql = "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_ID, LIKES_COUNT FROM FILMS";
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
 
         sql = "SELECT gf.FILM_ID, g.* FROM GENRES g \n" +
@@ -129,7 +130,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Optional<Film> getById(int id) {
-        String sql = "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_ID FROM FILMS WHERE ID = ?";
+        String sql = "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_ID, LIKES_COUNT FROM FILMS WHERE ID = ?";
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, id);
         if (films.isEmpty()) {
@@ -145,25 +146,26 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void saveLike(int filmId, int userId) {
-        String sql = "MERGE INTO LIKES(USER_ID, FILM_ID) KEY(USER_ID, FILM_ID) VALUES(?, ?);";
-        jdbcTemplate.update(sql, userId, filmId);
+        String sql =
+                "MERGE INTO LIKES(USER_ID, FILM_ID) KEY(USER_ID, FILM_ID) VALUES(?, ?);\n" +
+                "UPDATE FILMS SET LIKES_COUNT = LIKES_COUNT + 1 WHERE ID = ?;";
+        jdbcTemplate.update(sql, userId, filmId, filmId);
     }
 
     @Override
     public void deleteLike(int filmId, int userId) {
-        String sql = "DELETE FROM LIKES WHERE FILM_ID = ? AND USER_ID = ?;";
-        jdbcTemplate.update(sql, filmId, userId);
+        String sql =
+                "DELETE FROM LIKES WHERE FILM_ID = ? AND USER_ID = ?;\n" +
+                "UPDATE FILMS SET LIKES_COUNT = LIKES_COUNT - 1 WHERE ID = ?;";
+        jdbcTemplate.update(sql, filmId, userId, filmId);
     }
 
     @Override
     public List<Film> getTopPopular(Integer count) {
-        String sql = "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_ID, L.LIKES_COUNT \n" +
-                "FROM FILMS F\n" +
-                "JOIN (\n" +
-                "    SELECT FILM_ID, COUNT(USER_ID) LIKES_COUNT FROM LIKES L\n" +
-                "    GROUP BY FILM_ID\n" +
-                ") L ON L.FILM_ID = F.ID\n" +
-                "ORDER BY L.LIKES_COUNT DESC\n" +
+        String sql =
+                "SELECT ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_ID, LIKES_COUNT\n" +
+                "FROM FILMS\n" +
+                "ORDER BY LIKES_COUNT DESC\n" +
                 "LIMIT ?\n";
         return jdbcTemplate.query(sql, this::mapRowToFilm, count);
     }
@@ -176,6 +178,7 @@ public class FilmDbStorage implements FilmStorage {
                 .releaseDate(rs.getDate("RELEASE_DATE").toLocalDate())
                 .duration(rs.getInt("DURATION"))
                 .mpa(dictionaryStorage.getMpaById(rs.getInt("MPA_ID")).orElse(null))
+                .likesCount(rs.getInt("LIKES_COUNT"))
                 .build();
     }
 

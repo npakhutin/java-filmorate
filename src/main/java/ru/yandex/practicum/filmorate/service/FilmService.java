@@ -55,10 +55,10 @@ public class FilmService {
         if (userStorage.getById(userId).isEmpty()) {
             throw new UnknownModelObjectException("В хранилище не найден пользователь с id = " + userId + " для удаления лайка");
         }
-
         Film film = filmStorage.getById(id)
                 .orElseThrow(() -> new UnknownModelObjectException("В хранилище не найден фильм для удаления лайка с id = " + id));
         filmStorage.deleteLike(id, userId);
+        film.deleteLike();
         return film;
     }
 
