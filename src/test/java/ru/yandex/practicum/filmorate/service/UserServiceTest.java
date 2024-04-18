@@ -2,20 +2,33 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.annotation.DirtiesContext;
-import ru.yandex.practicum.filmorate.exception.UnknownUserException;
+import org.junit.jupiter.api.TestInstance;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.transaction.annotation.Transactional;
+import ru.yandex.practicum.filmorate.exception.UnknownModelObjectException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 
+@SpringBootTest
+@Sql(scripts = {"classpath:del_tables.sql", "classpath:schema.sql", "classpath:data.sql"}, executionPhase = BEFORE_TEST_METHOD)
+@Transactional
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UserServiceTest {
-    private final UserService service = new UserService(new InMemoryUserStorage());
+    private final UserService service;
     private User user;
+
+    @Autowired
+    public UserServiceTest(UserService service) {
+        this.service = service;
+    }
 
     @BeforeEach
     void setUp() {
@@ -49,7 +62,6 @@ class UserServiceTest {
     }
 
     @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     void getAll() {
         service.create(user);
         user = User.builder()
@@ -66,8 +78,7 @@ class UserServiceTest {
     void getById() {
         service.create(user);
         assertEquals(user, service.getById(user.getId()));
-        assertThrows(UnknownUserException.class, () -> service.getById(user.getId() + 1));
-        assertThrows(UnknownUserException.class, () -> service.getById(null));
+        assertThrows(UnknownModelObjectException.class, () -> service.getById(user.getId() + 1));
     }
 
     @Test
@@ -82,12 +93,12 @@ class UserServiceTest {
         user = service.create(user);
         friend = service.create(friend);
 
-        user = service.addFriend(user.getId(), friend.getId());
-        assertEquals(List.of(friend.getId()), user.getFriendIds());
-        assertEquals(List.of(user.getId()), friend.getFriendIds());
+        service.addFriend(user.getId(), friend.getId());
+        List<User> actualFriends = service.getUserFriends(user.getId());
+        assertEquals(List.of(friend), actualFriends);
 
-        user = service.deleteFriend(user.getId(), friend.getId());
-        assertEquals(0, user.getFriendIds().size());
-        assertEquals(0, friend.getFriendIds().size());
+        service.deleteFriend(user.getId(), friend.getId());
+        actualFriends = service.getUserFriends(user.getId());
+        assertEquals(0, actualFriends.size());
     }
 }

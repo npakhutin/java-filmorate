@@ -4,8 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(value = HttpStatus.NOT_FOUND)
-public class UnknownFilmException extends RuntimeException {
-    public UnknownFilmException(String m) {
+public class UnknownModelObjectException extends RuntimeException {
+    public UnknownModelObjectException(String m) {
         super(m);
     }
 }
